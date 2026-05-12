@@ -12,7 +12,7 @@ type BoundingBox = {
   h: number;
 };
 
-const collides = (a: BoundingBox, b: BoundingBox): Boolean => {
+const collides = (a: BoundingBox, b: BoundingBox): boolean => {
   let aBottom = a.y;
   let aTop = a.y + a.h;
   let aLeft = a.x;
@@ -31,10 +31,19 @@ const collides = (a: BoundingBox, b: BoundingBox): Boolean => {
   return vertOverlap && horzOverlap;
 };
 
-const sketch = (p: p5) => {
-  let playerBB: BoundingBox;
+type Player = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  // TODO add velocity
+};
 
-  let terrainBB: BoundingBox;
+const GRAVITY = 5;
+
+const sketch = (p: p5) => {
+  let player: Player;
+  let terrain: BoundingBox;
   let terrainSpeed = 0.5;
 
   const playerSpeed = 4;
@@ -44,16 +53,16 @@ const sketch = (p: p5) => {
   p.setup = () => {
     p.createCanvas(WIDTH, HEIGHT);
 
-    playerBB = {
+    player = {
       x: WIDTH / 8,
       y: HEIGHT / 2,
       w: playerSize,
       h: playerSize,
     };
 
-    terrainBB = {
+    terrain = {
       x: 30,
-      y: HEIGHT / 2 + playerBB.h + 1,
+      y: HEIGHT / 2 + player.h + 1,
       w: 55,
       h: 55,
     };
@@ -80,18 +89,20 @@ const sketch = (p: p5) => {
     // UPDATE
 
     // move terrain
-    //terrainBB.x -= terrainSpeed;
+    terrain.x -= terrainSpeed;
+
+    const STEP_SIZE = 1;
 
     const movePlayerX = (amount: number, onCollide?: () => void) => {
       let remainingX = amount;
-      const sign = Math.sign(remainingX);
+      const step = Math.sign(remainingX) * STEP_SIZE;
 
-      while (Math.abs(remainingX) > 1) {
-        playerBB.x += sign;
-        remainingX -= sign;
-        if (collides(playerBB, terrainBB)) {
+      while (Math.abs(remainingX) > STEP_SIZE) {
+        player.x += step;
+        remainingX -= step;
+        if (collides(player, terrain)) {
           // hit; rollback and exit
-          playerBB.x -= sign;
+          player.x -= step;
           onCollide?.();
           break;
         }
@@ -100,14 +111,14 @@ const sketch = (p: p5) => {
 
     const movePlayerY = (amount: number, onCollide?: () => void) => {
       let remainingY = amount;
-      const sign = Math.sign(remainingY);
+      const step = Math.sign(remainingY) * STEP_SIZE;
 
-      while (Math.abs(remainingY) > 1) {
-        playerBB.y += sign;
-        remainingY -= sign;
-        if (collides(playerBB, terrainBB)) {
+      while (Math.abs(remainingY) > STEP_SIZE) {
+        player.y += step;
+        remainingY -= step;
+        if (collides(player, terrain)) {
           // hit; rollback and exit
-          playerBB.y -= sign;
+          player.y -= step;
           onCollide?.();
           break;
         }
@@ -129,16 +140,17 @@ const sketch = (p: p5) => {
     }
 
     // TODO gravity
+    movePlayerY(GRAVITY);
 
     // Keep player in bounds
-    playerBB.x = p.constrain(playerBB.x, 0, WIDTH - playerBB.w);
-    playerBB.y = p.constrain(playerBB.y, 0, HEIGHT - playerBB.h);
+    player.x = p.constrain(player.x, 0, WIDTH - player.w);
+    player.y = p.constrain(player.y, 0, HEIGHT - player.h);
 
     // DRAW
 
     // draw terrain
     p.fill(100, 255, 100);
-    p.rect(terrainBB.x, terrainBB.y, terrainBB.w, terrainBB.h, 5);
+    p.rect(terrain.x, terrain.y, terrain.w, terrain.h, 5);
 
     // draw player (change color when A is pressed)
     if (PLAYER_1.A) {
@@ -149,12 +161,12 @@ const sketch = (p: p5) => {
       p.fill(100, 200, 255);
     }
 
-    if (collides(playerBB, terrainBB)) {
+    if (collides(player, terrain)) {
       p.fill(255, 100, 100);
     }
 
     p.noStroke();
-    p.rect(playerBB.x, playerBB.y, playerBB.w, playerBB.h, 5);
+    p.rect(player.x, player.y, player.w, player.h, 5);
   };
 };
 
