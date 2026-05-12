@@ -81,7 +81,7 @@ class Game {
         h: 55,
       },
       {
-        x: 100,
+        x: 200,
         y: playerFeet + 20,
         w: 250,
         h: 25,
@@ -94,6 +94,10 @@ class Game {
       return;
     }
 
+    if (this.player.ded) {
+      return;
+    }
+
     let terrainSpeed = 0.5;
     // move terrain
     for (const box of this.terrain) {
@@ -101,6 +105,12 @@ class Game {
     }
 
     const STEP_SIZE = 1;
+    let playerCopy = structuredClone(this.player);
+    playerCopy.y += STEP_SIZE;
+
+    this.player.grounded = !! this.terrain.find((box: BoundingBox) => {
+      collides(playerCopy, box);
+    });
 
     const movePlayerY = (amount: number, onCollide?: () => void) => {
       this.player.yRemainder = amount;
