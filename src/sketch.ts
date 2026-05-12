@@ -38,6 +38,7 @@ type Player = {
   h: number;
 
   grounded: boolean;
+  ded: boolean;
 
   xRemainder: number;
   yRemainder: number;
@@ -48,24 +49,22 @@ type Player = {
 const GRAVITY = 0.5;
 const JUMP_VELOCITY = 12;
 
-const sketch = (p: p5) => {
-  let player: Player;
-  let terrain: BoundingBox[];
-  let terrainSpeed = 0.5;
+class Game {
+  player: Player;
+  terrain: BoundingBox[];
+  started: boolean;
 
-  const playerSize = 20;
-  let gameStarted = false;
+  constructor() {
+    this.started = false;
 
-  p.setup = () => {
-    p.createCanvas(WIDTH, HEIGHT);
-
-    player = {
+    this.player = {
       x: WIDTH / 8,
       y: HEIGHT / 2,
-      w: playerSize,
-      h: playerSize,
+      w: 20,
+      h: 20,
 
       grounded: false,
+      ded: false,
 
       xRemainder: 0,
       yRemainder: 0,
@@ -73,8 +72,8 @@ const sketch = (p: p5) => {
       yVelocity: 0,
     };
 
-    const playerFeet = HEIGHT / 2 + player.h;
-    terrain = [
+    const playerFeet = HEIGHT / 2 + this.player.h;
+    this.terrain = [
       {
         x: 30,
         y: playerFeet + 1,
@@ -88,48 +87,34 @@ const sketch = (p: p5) => {
         h: 25,
       },
     ];
-  };
+  }
 
-  p.draw = () => {
-    p.background(26, 26, 46);
-
-    if (!gameStarted) {
-      // Show start screen
-      p.fill(255);
-      p.textSize(18);
-      p.textAlign(p.CENTER, p.CENTER);
-      p.text("Press 1P START", WIDTH / 2, HEIGHT / 2);
-      p.textSize(12);
-      p.text("Use D-PAD to move", WIDTH / 2, HEIGHT / 2 + 30);
-
-      if (SYSTEM.ONE_PLAYER) {
-        gameStarted = true;
-      }
+  update(p: p5) {
+    if (!this.started) {
       return;
     }
 
-    // UPDATE
-
+    let terrainSpeed = 0.5;
     // move terrain
-    for (const box of terrain) {
+    for (const box of this.terrain) {
       box.x -= terrainSpeed;
     }
 
     const STEP_SIZE = 1;
 
     const movePlayerY = (amount: number, onCollide?: () => void) => {
-      player.yRemainder = amount;
-      const step = Math.sign(player.yRemainder) * STEP_SIZE;
+      this.player.yRemainder = amount;
+      const step = Math.sign(this.player.yRemainder) * STEP_SIZE;
 
-      while (Math.abs(player.yRemainder) > STEP_SIZE) {
-        player.y += step;
-        player.yRemainder -= step;
+      while (Math.abs(this.player.yRemainder) > STEP_SIZE) {
+        this.player.y += step;
+        this.player.yRemainder -= step;
 
         let collided = false;
-        for (const box of terrain) {
-          if (collides(player, box)) {
+        for (const box of this.terrain) {
+          if (collides(this.player, box)) {
             // hit; rollback and exit
-            player.y -= step;
+            this.player.y -= step;
             onCollide?.();
             collided = true;
             break;
@@ -140,35 +125,54 @@ const sketch = (p: p5) => {
       }
     };
 
-    if (player.grounded && PLAYER_1.A) {
-      player.yVelocity -= JUMP_VELOCITY;
-      player.grounded = false;
+    if (this.player.grounded && PLAYER_1.A) {
+      this.player.yVelocity -= JUMP_VELOCITY;
+      this.player.grounded = false;
     }
-    if (!player.grounded) {
-      player.yVelocity += GRAVITY;
+    if (!this.player.grounded) {
+      this.player.yVelocity += GRAVITY;
     }
-    movePlayerY(player.yVelocity, () => {
-      if (player.yVelocity > 0) {
-        player.grounded = true;
-        player.yVelocity = 0;
+    movePlayerY(this.player.yVelocity, () => {
+      if (this.player.yVelocity > 0) {
+        this.player.grounded = true;
+        this.player.yVelocity = 0;
       }
     });
 
-    // Keep player in bounds
-    player.x = p.constrain(player.x, 0, WIDTH - player.w);
-    player.y = p.constrain(player.y, 0, HEIGHT - player.h);
+    if (this.player.y > HEIGHT - this.player.h) {
+      this.player.ded = true;
+    }
 
-    // DRAW
+    // Keep player in bounds
+    this.player.x = p.constrain(this.player.x, 0, WIDTH - this.player.w);
+    this.player.y = p.constrain(this.player.y, 0, HEIGHT - this.player.h);
+  }
+
+  draw(p: p5) {
+    if (!this.started) {
+      // Show start screen
+      p.fill(255);
+      p.textSize(18);
+      p.textAlign(p.CENTER, p.CENTER);
+      p.text("Press 1P START", WIDTH / 2, HEIGHT / 2);
+      p.textSize(12);
+      p.text("Use D-PAD to move", WIDTH / 2, HEIGHT / 2 + 30);
+
+      if (SYSTEM.ONE_PLAYER) {
+        this.started = true;
+      }
+      return;
+    }
 
     // draw terrain
     p.fill(100, 255, 100);
 
-    for (const box of terrain) {
+    for (const box of this.terrain) {
       p.rect(box.x, box.y, box.w, box.h, 5);
     }
 
     // draw player (change color when A is pressed)
-    if (PLAYER_1.A) {
+    if (PLAYER_1.A || this.player.ded) {
       p.fill(255, 100, 100);
     } else if (PLAYER_1.B) {
       p.fill(100, 255, 100);
@@ -176,8 +180,8 @@ const sketch = (p: p5) => {
       p.fill(100, 200, 255);
     }
 
-    const playerCollidedTerrain = terrain.find((box: BoundingBox) => {
-      collides(player, box);
+    const playerCollidedTerrain = this.terrain.find((box: BoundingBox) => {
+      collides(this.player, box);
     });
 
     if (playerCollidedTerrain) {
@@ -185,7 +189,23 @@ const sketch = (p: p5) => {
     }
 
     p.noStroke();
-    p.rect(player.x, player.y, player.w, player.h, 5);
+    p.rect(this.player.x, this.player.y, this.player.w, this.player.h, 5);
+  }
+}
+
+const sketch = (p: p5) => {
+  let game: Game;
+
+  p.setup = () => {
+    p.createCanvas(WIDTH, HEIGHT);
+    game = new Game();
+  };
+
+  p.draw = () => {
+    p.background(26, 26, 46);
+
+    game.update(p);
+    game.draw(p);
   };
 };
 
