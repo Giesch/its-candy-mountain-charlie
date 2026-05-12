@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite --port 5173 --strictPort\" \"rcade dev http://localhost:5173\"",
-    "build": "vite build"
+    "build": "vite build",
+    "typecheck": "tsc --build --noEmit",
+    "typecheck:watch": "tsc --build --watch --noEmit"
   },
   "devDependencies": {
     "@types/p5": "^1.7.6",
