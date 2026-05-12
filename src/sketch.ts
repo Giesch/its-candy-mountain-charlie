@@ -5,24 +5,55 @@ import { PLAYER_1, SYSTEM } from "@rcade/plugin-input-classic";
 const WIDTH = 336;
 const HEIGHT = 262;
 
-const sketch = (p: p5) => {
-  let ballX: number;
-  let ballY: number;
+type BoundingBox = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
 
-  let terrainX: number;
-  let terrainY: number;
+const collides = (a: BoundingBox, b: BoundingBox): Boolean => {
+  let aBottom = a.y;
+  let aTop = a.y + a.h;
+  let aLeft = a.x;
+  let aRight = a.x + a.w;
+
+  let bBottom = b.y;
+  let bTop = b.y + b.w;
+  let bLeft = b.x;
+  let bRight = b.x + b.w;
+
+  let vertOverlap = (aBottom < bTop && aBottom > bBottom) || (aTop > bBottom && aTop < bTop);
+  let horzOverlap = (aLeft < bRight && aLeft > bLeft) || (aRight > bLeft && aRight < bRight);
+
+  return vertOverlap && horzOverlap;
+}
+
+const sketch = (p: p5) => {
+  let playerBB: BoundingBox;
+
+  let terrainBB: BoundingBox;
   let terrainSpeed = 0.5;
 
-  const ballSpeed = 4;
-  const ballSize = 20;
+  const playerSpeed = 4;
+  const playerSize = 20;
   let gameStarted = false;
 
   p.setup = () => {
     p.createCanvas(WIDTH, HEIGHT);
-    ballX = WIDTH / 8;
-    ballY = HEIGHT / 2;
-    terrainX = 30;
-    terrainY = HEIGHT / 2 + ballSize / 2;
+    playerBB = {
+     x: WIDTH / 8,
+     y: HEIGHT / 2,
+     w: playerSize,
+     h: playerSize,
+    };
+
+    terrainBB = {
+     x: 30,
+     y: HEIGHT / 2 + playerBB.h / 2,
+     w: 55,
+     h: 55,
+    };
   };
 
   p.draw = () => {
@@ -46,33 +77,33 @@ const sketch = (p: p5) => {
     // UPDATE
 
     // move terrain
-    terrainX -= terrainSpeed;
+    //terrainBB.x -= terrainSpeed;
 
     // Handle input from arcade controls
     if (PLAYER_1.DPAD.up) {
-      ballY -= ballSpeed;
+      playerBB.y -= playerSpeed;
     }
     if (PLAYER_1.DPAD.down) {
-      ballY += ballSpeed;
+      playerBB.y += playerSpeed;
     }
     if (PLAYER_1.DPAD.left) {
-      ballX -= ballSpeed;
+      playerBB.x -= playerSpeed;
     }
     if (PLAYER_1.DPAD.right) {
-      ballX += ballSpeed;
+      playerBB.x += playerSpeed;
     }
 
-    // Keep ball in bounds
-    ballX = p.constrain(ballX, ballSize / 2, WIDTH - ballSize / 2);
-    ballY = p.constrain(ballY, ballSize / 2, HEIGHT - ballSize / 2);
+    // Keep player in bounds
+    playerBB.x = p.constrain(playerBB.x, 0, WIDTH - playerBB.w);
+    playerBB.y = p.constrain(playerBB.y, 0, HEIGHT - playerBB.h);
 
     // DRAW
 
     // draw terrain
     p.fill(100, 255, 100);
-    p.rect(terrainX, terrainY, 55, 55, 5);
+    p.rect(terrainBB.x, terrainBB.y, terrainBB.w, terrainBB.h, 5);
 
-    // draw ball (change color when A is pressed)
+    // draw player (change color when A is pressed)
     if (PLAYER_1.A) {
       p.fill(255, 100, 100);
     } else if (PLAYER_1.B) {
@@ -80,8 +111,13 @@ const sketch = (p: p5) => {
     } else {
       p.fill(100, 200, 255);
     }
+
+    if (collides(playerBB, terrainBB)) {
+      p.fill(255, 100, 100);
+    }
+
     p.noStroke();
-    p.ellipse(ballX, ballY, ballSize, ballSize);
+    p.rect(playerBB.x, playerBB.y, playerBB.w, playerBB.h, 5);
   };
 };
 
