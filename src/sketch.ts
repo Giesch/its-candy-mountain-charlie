@@ -36,17 +36,23 @@ type Player = {
   y: number;
   w: number;
   h: number;
-  // TODO add velocity
+
+  grounded: boolean;
+
+  xRemainder: number;
+  yRemainder: number;
+  xVelocity: number;
+  yVelocity: number;
 };
 
-const GRAVITY = 5;
+const GRAVITY = 2;
+const JUMP_VELOCITY = 20;
 
 const sketch = (p: p5) => {
   let player: Player;
   let terrain: BoundingBox;
   let terrainSpeed = 0.5;
 
-  const playerSpeed = 4;
   const playerSize = 20;
   let gameStarted = false;
 
@@ -58,6 +64,13 @@ const sketch = (p: p5) => {
       y: HEIGHT / 2,
       w: playerSize,
       h: playerSize,
+
+      grounded: false,
+
+      xRemainder: 0,
+      yRemainder: 0,
+      xVelocity: 0,
+      yVelocity: 0,
     };
 
     terrain = {
@@ -93,29 +106,14 @@ const sketch = (p: p5) => {
 
     const STEP_SIZE = 1;
 
-    const movePlayerX = (amount: number, onCollide?: () => void) => {
-      let remainingX = amount;
-      const step = Math.sign(remainingX) * STEP_SIZE;
-
-      while (Math.abs(remainingX) > STEP_SIZE) {
-        player.x += step;
-        remainingX -= step;
-        if (collides(player, terrain)) {
-          // hit; rollback and exit
-          player.x -= step;
-          onCollide?.();
-          break;
-        }
-      }
-    };
-
     const movePlayerY = (amount: number, onCollide?: () => void) => {
-      let remainingY = amount;
-      const step = Math.sign(remainingY) * STEP_SIZE;
+      player.yRemainder = amount;
+      const step = Math.sign(player.yRemainder) * STEP_SIZE;
 
-      while (Math.abs(remainingY) > STEP_SIZE) {
+      while (Math.abs(player.yRemainder) > STEP_SIZE) {
         player.y += step;
-        remainingY -= step;
+        player.yRemainder -= step;
+
         if (collides(player, terrain)) {
           // hit; rollback and exit
           player.y -= step;
@@ -125,22 +123,18 @@ const sketch = (p: p5) => {
       }
     };
 
-    // Handle input from arcade controls
-    if (PLAYER_1.DPAD.up) {
-      movePlayerY(-playerSpeed);
+    if (player.grounded && PLAYER_1.A) {
+      player.yVelocity -= JUMP_VELOCITY;
+      player.grounded = false;
     }
-    if (PLAYER_1.DPAD.down) {
-      movePlayerY(playerSpeed);
+    if (!player.grounded) {
+      player.yVelocity += GRAVITY;
     }
-    if (PLAYER_1.DPAD.left) {
-      movePlayerX(-playerSpeed);
-    }
-    if (PLAYER_1.DPAD.right) {
-      movePlayerX(playerSpeed);
-    }
-
-    // TODO gravity
-    movePlayerY(GRAVITY);
+    movePlayerY(player.yVelocity, () => {
+      if (player.yVelocity > 0) {
+        player.grounded = true;
+      }
+    });
 
     // Keep player in bounds
     player.x = p.constrain(player.x, 0, WIDTH - player.w);
