@@ -50,7 +50,7 @@ const JUMP_VELOCITY = 12;
 
 const sketch = (p: p5) => {
   let player: Player;
-  let terrain: BoundingBox;
+  let terrain: BoundingBox[];
   let terrainSpeed = 0.5;
 
   const playerSize = 20;
@@ -73,12 +73,21 @@ const sketch = (p: p5) => {
       yVelocity: 0,
     };
 
-    terrain = {
-      x: 30,
-      y: HEIGHT / 2 + player.h + 1,
-      w: 55,
-      h: 55,
-    };
+    const playerFeet = HEIGHT / 2 + player.h;
+    terrain = [
+      {
+        x: 30,
+        y: playerFeet + 1,
+        w: 55,
+        h: 55,
+      },
+      {
+        x: 100,
+        y: playerFeet + 20,
+        w: 250,
+        h: 25,
+      },
+    ];
   };
 
   p.draw = () => {
@@ -102,7 +111,9 @@ const sketch = (p: p5) => {
     // UPDATE
 
     // move terrain
-    terrain.x -= terrainSpeed;
+    for (const box of terrain) {
+      box.x -= terrainSpeed;
+    }
 
     const STEP_SIZE = 1;
 
@@ -114,12 +125,18 @@ const sketch = (p: p5) => {
         player.y += step;
         player.yRemainder -= step;
 
-        if (collides(player, terrain)) {
-          // hit; rollback and exit
-          player.y -= step;
-          onCollide?.();
-          break;
+        let collided = false;
+        for (const box of terrain) {
+          if (collides(player, box)) {
+            // hit; rollback and exit
+            player.y -= step;
+            onCollide?.();
+            collided = true;
+            break;
+          }
         }
+
+        if (collided) break;
       }
     };
 
@@ -133,6 +150,7 @@ const sketch = (p: p5) => {
     movePlayerY(player.yVelocity, () => {
       if (player.yVelocity > 0) {
         player.grounded = true;
+        player.yVelocity = 0;
       }
     });
 
@@ -144,7 +162,10 @@ const sketch = (p: p5) => {
 
     // draw terrain
     p.fill(100, 255, 100);
-    p.rect(terrain.x, terrain.y, terrain.w, terrain.h, 5);
+
+    for (const box of terrain) {
+      p.rect(box.x, box.y, box.w, box.h, 5);
+    }
 
     // draw player (change color when A is pressed)
     if (PLAYER_1.A) {
@@ -155,7 +176,11 @@ const sketch = (p: p5) => {
       p.fill(100, 200, 255);
     }
 
-    if (collides(player, terrain)) {
+    const playerCollidedTerrain = terrain.find((box: BoundingBox) => {
+      collides(player, box);
+    });
+
+    if (playerCollidedTerrain) {
       p.fill(255, 100, 100);
     }
 
