@@ -6,17 +6,23 @@ const WIDTH = 336;
 const HEIGHT = 262;
 
 const sketch = (p: p5) => {
-  let x: number;
-  let y: number;
+  let ballX: number;
+  let ballY: number;
 
-  const speed = 4;
+  let terrainX: number;
+  let terrainY: number;
+  let terrainSpeed = 0.5;
+
+  const ballSpeed = 4;
   const ballSize = 20;
   let gameStarted = false;
 
   p.setup = () => {
     p.createCanvas(WIDTH, HEIGHT);
-    x = WIDTH / 8;
-    y = HEIGHT / 2;
+    ballX = WIDTH / 8;
+    ballY = HEIGHT / 2;
+    terrainX = 30;
+    terrainY = HEIGHT / 2 + ballSize / 2;
   };
 
   p.draw = () => {
@@ -37,25 +43,36 @@ const sketch = (p: p5) => {
       return;
     }
 
+    // UPDATE
+
+    // move terrain
+    terrainX -= terrainSpeed;
+
     // Handle input from arcade controls
     if (PLAYER_1.DPAD.up) {
-      y -= speed;
+      ballY -= ballSpeed;
     }
     if (PLAYER_1.DPAD.down) {
-      y += speed;
+      ballY += ballSpeed;
     }
     if (PLAYER_1.DPAD.left) {
-      x -= speed;
+      ballX -= ballSpeed;
     }
     if (PLAYER_1.DPAD.right) {
-      x += speed;
+      ballX += ballSpeed;
     }
 
     // Keep ball in bounds
-    x = p.constrain(x, ballSize / 2, WIDTH - ballSize / 2);
-    y = p.constrain(y, ballSize / 2, HEIGHT - ballSize / 2);
+    ballX = p.constrain(ballX, ballSize / 2, WIDTH - ballSize / 2);
+    ballY = p.constrain(ballY, ballSize / 2, HEIGHT - ballSize / 2);
 
-    // Draw ball (change color when A is pressed)
+    // DRAW
+
+    // draw terrain
+    p.fill(100, 255, 100);
+    p.rect(terrainX, terrainY, 55, 55, 5);
+
+    // draw ball (change color when A is pressed)
     if (PLAYER_1.A) {
       p.fill(255, 100, 100);
     } else if (PLAYER_1.B) {
@@ -64,7 +81,7 @@ const sketch = (p: p5) => {
       p.fill(100, 200, 255);
     }
     p.noStroke();
-    p.ellipse(x, y, ballSize, ballSize);
+    p.ellipse(ballX, ballY, ballSize, ballSize);
   };
 };
 
