@@ -23,11 +23,13 @@ const collides = (a: BoundingBox, b: BoundingBox): Boolean => {
   let bLeft = b.x;
   let bRight = b.x + b.w;
 
-  let vertOverlap = (aBottom < bTop && aBottom > bBottom) || (aTop > bBottom && aTop < bTop);
-  let horzOverlap = (aLeft < bRight && aLeft > bLeft) || (aRight > bLeft && aRight < bRight);
+  let vertOverlap =
+    (aBottom < bTop && aBottom > bBottom) || (aTop > bBottom && aTop < bTop);
+  let horzOverlap =
+    (aLeft < bRight && aLeft > bLeft) || (aRight > bLeft && aRight < bRight);
 
   return vertOverlap && horzOverlap;
-}
+};
 
 const sketch = (p: p5) => {
   let playerBB: BoundingBox;
@@ -41,18 +43,19 @@ const sketch = (p: p5) => {
 
   p.setup = () => {
     p.createCanvas(WIDTH, HEIGHT);
+
     playerBB = {
-     x: WIDTH / 8,
-     y: HEIGHT / 2,
-     w: playerSize,
-     h: playerSize,
+      x: WIDTH / 8,
+      y: HEIGHT / 2,
+      w: playerSize,
+      h: playerSize,
     };
 
     terrainBB = {
-     x: 30,
-     y: HEIGHT / 2 + playerBB.h / 2,
-     w: 55,
-     h: 55,
+      x: 30,
+      y: HEIGHT / 2 + playerBB.h + 1,
+      w: 55,
+      h: 55,
     };
   };
 
@@ -79,19 +82,53 @@ const sketch = (p: p5) => {
     // move terrain
     //terrainBB.x -= terrainSpeed;
 
+    const movePlayerX = (amount: number, onCollide?: () => void) => {
+      let remainingX = amount;
+      const sign = Math.sign(remainingX);
+
+      while (Math.abs(remainingX) > 1) {
+        playerBB.x += sign;
+        remainingX -= sign;
+        if (collides(playerBB, terrainBB)) {
+          // hit; rollback and exit
+          playerBB.x -= sign;
+          onCollide?.();
+          break;
+        }
+      }
+    };
+
+    const movePlayerY = (amount: number, onCollide?: () => void) => {
+      let remainingY = amount;
+      const sign = Math.sign(remainingY);
+
+      while (Math.abs(remainingY) > 1) {
+        playerBB.y += sign;
+        remainingY -= sign;
+        if (collides(playerBB, terrainBB)) {
+          // hit; rollback and exit
+          playerBB.y -= sign;
+          onCollide?.();
+          break;
+        }
+      }
+    };
+
     // Handle input from arcade controls
     if (PLAYER_1.DPAD.up) {
-      playerBB.y -= playerSpeed;
+      movePlayerY(-playerSpeed);
     }
     if (PLAYER_1.DPAD.down) {
-      playerBB.y += playerSpeed;
+      movePlayerY(playerSpeed);
     }
     if (PLAYER_1.DPAD.left) {
-      playerBB.x -= playerSpeed;
+      movePlayerX(-playerSpeed);
     }
     if (PLAYER_1.DPAD.right) {
-      playerBB.x += playerSpeed;
+      movePlayerX(playerSpeed);
     }
+
+    // TODO gravity
 
     // Keep player in bounds
     playerBB.x = p.constrain(playerBB.x, 0, WIDTH - playerBB.w);
