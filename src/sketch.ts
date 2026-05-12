@@ -45,8 +45,8 @@ type Player = {
   yVelocity: number;
 };
 
-const GRAVITY = 2;
-const JUMP_VELOCITY = 20;
+const GRAVITY = 0.5;
+const JUMP_VELOCITY = 12;
 
 const sketch = (p: p5) => {
   let player: Player;
