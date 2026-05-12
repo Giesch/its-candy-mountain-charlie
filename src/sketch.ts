@@ -15,7 +15,7 @@ const sketch = (p: p5) => {
 
   p.setup = () => {
     p.createCanvas(WIDTH, HEIGHT);
-    x = WIDTH / 2;
+    x = WIDTH / 8;
     y = HEIGHT / 2;
   };
 
